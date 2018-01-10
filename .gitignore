@@ -1,0 +1,71 @@
+########
+## uncategorized (this list should be empty!)
+####
+
+docs/
+!client/ui/static/docs/
+client/*/jasmine-test-runner.html
+client/*/node_modules/*
+.idea/
+.project
+*.iml
+*.log
+*.rdb
+_*SpecRunner.html
+dist/
+client/*/dist
+Thumbs.db
+
+.vagrant
+
+.project
+
+########
+## build artifacts (produced by the build solution)
+####
+
+# npm installed modules
+node_modules/
+
+# bower installed components
+client/*/assets/js/components/
+
+########
+## development artifacts (produced by development tools)
+####
+.sass-cache/
+# some Mac OS funkiness
+.DS_Store/
+
+# Vim artifacts
+.*.s[a-w][a-z]
+.s[a-w][a-z]
+*.un~
+Session.vim
+.netrwhist
+*~
+
+# Sublime Text artifacts
+*.sublime-project
+*.sublime-workspace
+*.sublime-gulp.cache
+
+foss-report.csv
+allComments.json
+########
+## application artifacts (produced by the application)
+####
+ampersand-bundle.js
+maapi-bundle.js
+compiledTemplates.js
+client/*/assets/templates/**/*.js
+
+# logging directory
+logs/
+!/client/**/logs
+
+karma_html/
+
+# Test Reports/Screenshots
+tests/reports/
+tests/screenshots/
