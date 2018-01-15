@@ -1,6 +1,7 @@
 var path = require('path');
 var webpack = require('webpack');
 var root = path.resolve(__dirname);
+var CopyWebpackPlugin = require('copy-webpack-plugin');
 
 module.exports = {
     entry: './src/main.js',
@@ -55,7 +56,13 @@ module.exports = {
         new webpack.optimize.CommonsChunkPlugin({
             // this chunk is needed so the modules bundle doesn't get rebuilt anytime a file changes
             name: 'manifest'
-        })
+        }),
+        new CopyWebpackPlugin([
+            {
+                from: path.resolve('./assets'),
+                to: path.resolve('./dist/assets')
+            },
+        ])
     ]
 };
 
