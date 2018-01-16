@@ -1,8 +1,8 @@
 import {vec3, vec4, quat, mat4} from 'gl-matrix';
 
 var gl,
-    vertexShaderSource = require('./shaders/lesson-two/vertex.glsl'),
-    fragmentShaderSource = require('./shaders/lesson-two/fragment.glsl');
+    vertexShaderSource = require('./shaders/vertex.glsl'),
+    fragmentShaderSource = require('./shaders/fragment.glsl');
 
 function degToRad(degrees) {
     return degrees * Math.PI / 180;
@@ -79,27 +79,11 @@ function initShaders() {
 
 
 var mvMatrix = mat4.create();
-var mvMatrixStack = [];
 var pMatrix = mat4.create();
 
 function setMatrixUniforms() {
     gl.uniformMatrix4fv(shaderProgram.pMatrixUniform, false, pMatrix);
     gl.uniformMatrix4fv(shaderProgram.mvMatrixUniform, false, mvMatrix);
-}
-
-function mvPushMatrix() {
-    var copy = mat4.create();
-
-    mat4.copy(copy, mvMatrix);
-    mvMatrixStack.push(copy);
-}
-
-function mvPopMatrix() {
-    if (mvMatrixStack.length === 0) {
-        throw "Invalid Matrix Stack";
-    }
-
-    mvMatrix = mvMatrixStack.pop();
 }
 
 var cubeVertexPositionBuffer;
@@ -209,7 +193,6 @@ function initBuffers() {
     ];
 
     gl.activeTexture(gl.TEXTURE0);
-    gl.bindTexture(gl.TEXTURE_2D, neheTexture);
     gl.uniform1i(shaderProgram.samplerUniform, 0);
 
     gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(cubeVertexIndices), gl.STATIC_DRAW);
@@ -217,35 +200,113 @@ function initBuffers() {
     cubeVertexIndexBuffer.numItems = 36;
 }
 
-var neheTexture;
+var crateTextures = Array();
 
 function initTexture() {
-    neheTexture = gl.createTexture();
-    neheTexture.image = new Image();
-    neheTexture.image.onload = function() {
-        handleLoadedTexture(neheTexture);
-    };
+    var crateImage = new Image();
 
-    neheTexture.image.src = "/dist/assets/nehe.gif";
+    for (var i = 0; i < 3; i++) {
+        var texture = gl.createTexture();
+
+        texture.image = crateImage;
+        crateTextures.push(texture);
+    }
+
+    crateImage.onload = function() {
+        handleLoadedTexture(crateTextures);
+    }
+
+    crateImage.src = "/dist/assets/crate.gif";
 }
 
-function handleLoadedTexture(texture) {
-    gl.bindTexture(gl.TEXTURE_2D, texture);
+function handleLoadedTexture(textures) {
     gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
 
+    gl.bindTexture(gl.TEXTURE_2D, textures[0]);
     //Upload texture to the GPU
-    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, texture.image);
-
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, textures[0].image);
     //Scaling parameters
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
 
+    gl.bindTexture(gl.TEXTURE_2D, textures[1]);
+    //Upload texture to the GPU
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, textures[1].image);
+    //Scaling parameters
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+
+    gl.bindTexture(gl.TEXTURE_2D, textures[2]);
+    //Upload texture to the GPU
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, textures[2].image);
+    //Scaling parameters
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_NEAREST);
+    gl.generateMipmap(gl.TEXTURE_2D);
+
+
     gl.bindTexture(gl.TEXTURE_2D, null);
 }
 
+var currentlyPressedKeys = {};
+
+function handleKeyDown(event) {
+    currentlyPressedKeys[event.keyCode] = true;
+
+    if (String.fromCharCode(event.keyCode) === 'F') {
+        filter += 1;
+
+        if (filter === 3) {
+            filter = 0;
+        }
+    }
+}
+
+function handleKeyUp(event) {
+    currentlyPressedKeys[event.keyCode] = false;
+}
+
+function handleKeys() {
+    if (currentlyPressedKeys[33]) {
+        //Page Up
+        z -= 0.05;
+    }
+
+    if (currentlyPressedKeys[34]) {
+        //Page Down
+        z += 0.05;
+    }
+
+    if (currentlyPressedKeys[37]) {
+        //Left Cursor
+        ySpeed -= 1;
+    }
+
+    if (currentlyPressedKeys[39]) {
+        //Right Cursor
+        ySpeed += 1;
+    }
+
+    if (currentlyPressedKeys[38]) {
+        //Up Cursor
+        xSpeed -= 1;
+    }
+
+    if (currentlyPressedKeys[40]) {
+        //Down Cursor
+        xSpeed += 1;
+    }
+}
+
 var xRot = 0;
+var xSpeed = 0;
+
 var yRot = 0;
-var zRot = 0;
+var ySpeed = 0;
+
+var z = -5.0;
+
+var filter = 0;
 
 function drawScene() {
     gl.viewport(0, 0, gl.viewportWidth, gl.viewportHeight);
@@ -255,11 +316,10 @@ function drawScene() {
 
     mat4.identity(mvMatrix);
 
-    mat4.translate(mvMatrix, mvMatrix, [0.0, 0.0, -5.0]);
+    mat4.translate(mvMatrix, mvMatrix, [0.0, 0.0, z]);
 
     mat4.rotate(mvMatrix, mvMatrix, degToRad(xRot), [1, 0, 0]);
     mat4.rotate(mvMatrix, mvMatrix, degToRad(yRot), [0, 1, 0]);
-    mat4.rotate(mvMatrix, mvMatrix, degToRad(zRot), [0, 0, 1]);
 
     gl.bindBuffer(gl.ARRAY_BUFFER, cubeVertexPositionBuffer);
     gl.vertexAttribPointer(shaderProgram.vertexPositionAttribute, cubeVertexPositionBuffer.itemSize, gl.FLOAT, false, 0, 0);
@@ -268,7 +328,7 @@ function drawScene() {
     gl.vertexAttribPointer(shaderProgram.textureCoordAttribute, cubeVertexTextureCoordBuffer.itemSize, gl.FLOAT, false, 0, 0);
 
     gl.activeTexture(gl.TEXTURE0);
-    gl.bindTexture(gl.TEXTURE_2D, neheTexture);
+    gl.bindTexture(gl.TEXTURE_2D, crateTextures[filter]);
     gl.uniform1i(shaderProgram.samplerUniform, 0);
 
     gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, cubeVertexIndexBuffer);
@@ -284,9 +344,8 @@ function animate() {
     if (lastTime !== 0) {
         var elapsed = timeNow - lastTime;
 
-        xRot += (90 * elapsed) / 1000;
-        yRot += (90 * elapsed) / 1000;
-        zRot += (90 * elapsed) / 1000;
+        xRot += (xSpeed * elapsed) / 1000;
+        yRot += (ySpeed * elapsed) / 1000;
     }
 
     lastTime = timeNow;
@@ -295,6 +354,7 @@ function animate() {
 function tick() {
     requestAnimationFrame(tick);
 
+    handleKeys();
     drawScene();
     animate();
 }
@@ -308,6 +368,9 @@ function webGLStart() {
 
     gl.clearColor(0.0, 0.0, 0.0, 1.0);
     gl.enable(gl.DEPTH_TEST);
+
+    document.onkeydown = handleKeyDown;
+    document.onkeyup = handleKeyUp;
 
     tick();
 }
